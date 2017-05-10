@@ -22,7 +22,8 @@ typedef NS_ENUM(NSUInteger, SVProgressHUDMaskType) {
     SVProgressHUDMaskTypeNone = 1,  // allow user interactions while HUD is displayed
     SVProgressHUDMaskTypeClear,     // don't allow user interactions
     SVProgressHUDMaskTypeBlack,     // don't allow user interactions and dim the UI in the back of the HUD
-    SVProgressHUDMaskTypeGradient   // don't allow user interactions and dim the UI with a a-la-alert-view background gradient
+    SVProgressHUDMaskTypeGradient,   // don't allow user interactions and dim the UI with a a-la-alert-view background gradient
+    SVProgressHUDMaskTypeActiveNavBar   //// don't allow user interactions and dim the UI in the back of the HUD but navigationBar can interaction
 };
 
 @interface SVProgressHUD : UIView
@@ -66,6 +67,9 @@ typedef NS_ENUM(NSUInteger, SVProgressHUDMaskType) {
 // use 28x28 white pngs
 + (void)showImage:(UIImage*)image status:(NSString*)status;
 + (void)showImage:(UIImage*)image status:(NSString*)status maskType:(SVProgressHUDMaskType)maskType;
+
++ (void)showImages:(NSArray *)images;
++ (void)showImages:(NSArray *)images maskType:(SVProgressHUDMaskType)maskType;
 
 + (void)setOffsetFromCenter:(UIOffset)offset;
 + (void)resetOffsetFromCenter;
