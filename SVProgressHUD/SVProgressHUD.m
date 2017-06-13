@@ -880,6 +880,7 @@ static const CGFloat SVProgressHUDUndefinedProgress = -1;
             self.overlayView.frame = SVProgressHUDNonEnableNavBarFrame;
         }
         [self.overlayView setNeedsDisplay];
+        [self.hudView setCenter:CGPointMake(self.overlayView.frame.size.width/2, self.overlayView.frame.size.height/2)];
     } else {
         self.overlayView.userInteractionEnabled = NO;
         self.hudView.accessibilityLabel = string;
