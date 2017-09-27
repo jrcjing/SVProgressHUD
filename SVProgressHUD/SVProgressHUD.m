@@ -38,7 +38,9 @@ static const CGFloat SVProgressHUDRingNoTextRadius = 24;
 static const CGFloat SVProgressHUDParallaxDepthPoints = 10;
 static const CGFloat SVProgressHUDUndefinedProgress = -1;
 
-#define SVProgressHUDEnableNavBarFrame  CGRectMake(0.0f, 64.0f, [UIScreen mainScreen].bounds.size.width, [UIScreen mainScreen].bounds.size.height - 44.0f)
+#define isIPhoneX   [UIScreen mainScreen].bounds.size.height == 812
+
+#define SVProgressHUDEnableNavBarFrame  isIPhoneX ? CGRectMake(0.0f, 88.0f, [UIScreen mainScreen].bounds.size.width, [UIScreen mainScreen].bounds.size.height - 88.0f) : CGRectMake(0.0f, 64.0f, [UIScreen mainScreen].bounds.size.width, [UIScreen mainScreen].bounds.size.height - 44.0f)
 
 #define SVProgressHUDNonEnableNavBarFrame  CGRectMake(0.0f, 0.0f, [UIScreen mainScreen].bounds.size.width, [UIScreen mainScreen].bounds.size.height)
 
