@@ -38,7 +38,7 @@ static const CGFloat SVProgressHUDRingNoTextRadius = 24;
 static const CGFloat SVProgressHUDParallaxDepthPoints = 10;
 static const CGFloat SVProgressHUDUndefinedProgress = -1;
 
-#define isIPhoneX   [UIScreen mainScreen].bounds.size.height == 812
+#define isIPhoneX   ([UIScreen mainScreen].bounds.size.height == 812 || [UIScreen mainScreen].bounds.size.height == 896)
 
 #define topOffset isIPhoneX ? 88.0f : 64.0f
 
