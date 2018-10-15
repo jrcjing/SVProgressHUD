@@ -1167,13 +1167,21 @@ static const CGFloat SVProgressHUDUndefinedProgress = -1;
         }
     }
     
-    for (__strong UIView *possibleKeyboard in [keyboardWindow subviews]) {
-        if ([possibleKeyboard isKindOfClass:NSClassFromString(@"UIPeripheralHostView")] || [possibleKeyboard isKindOfClass:NSClassFromString(@"UIKeyboard")]) {
-            return CGRectGetHeight(possibleKeyboard.bounds);
-        } else if ([possibleKeyboard isKindOfClass:NSClassFromString(@"UIInputSetContainerView")]) {
-            for (__strong UIView *possibleKeyboardSubview in [possibleKeyboard subviews]) {
-                if ([possibleKeyboardSubview isKindOfClass:NSClassFromString(@"UIInputSetHostView")]) {
-                    return CGRectGetHeight(possibleKeyboardSubview.bounds);
+    for (__strong UIView *possibleKeyboard in keyboardWindow.subviews) {
+        NSString *viewName = NSStringFromClass(possibleKeyboard.class);
+        if([viewName hasPrefix:@"UI"]){
+            if([viewName hasSuffix:@"PeripheralHostView"] || [viewName hasSuffix:@"Keyboard"]){
+                return CGRectGetHeight(possibleKeyboard.bounds);
+            } else if ([viewName hasSuffix:@"InputSetContainerView"]){
+                for (__strong UIView *possibleKeyboardSubview in possibleKeyboard.subviews) {
+                    viewName = NSStringFromClass(possibleKeyboardSubview.class);
+                    if([viewName hasPrefix:@"UI"] && [viewName hasSuffix:@"InputSetHostView"]) {
+                        CGRect convertedRect = [possibleKeyboard convertRect:possibleKeyboardSubview.frame toView:self];
+                        CGRect intersectedRect = CGRectIntersection(convertedRect, self.bounds);
+                        if (!CGRectIsNull(intersectedRect)) {
+                            return CGRectGetHeight(intersectedRect);
+                        }
+                    }
                 }
             }
         }
