@@ -65,6 +65,9 @@ static const CGFloat SVProgressHUDUndefinedProgress = -1;
 @property (nonatomic, readonly) CGFloat visibleKeyboardHeight;
 @property (nonatomic, assign) UIOffset offsetFromCenter;
 
+@property (assign, nonatomic) NSTimeInterval minimumDismissTimeInterval;
+@property (assign, nonatomic) NSTimeInterval maximumDismissTimeInterval;
+
 
 - (void)showProgress:(float)progress status:(NSString*)string maskType:(SVProgressHUDMaskType)hudMaskType;
 - (void)showImage:(UIImage*)image status:(NSString*)status duration:(NSTimeInterval)duration maskType:(SVProgressHUDMaskType)hudMaskType;
@@ -140,6 +143,14 @@ static const CGFloat SVProgressHUDUndefinedProgress = -1;
 + (void)setViewForExtension:(UIView *)view{
     [self sharedView];
     SVProgressHUDExtensionView = view;
+}
+
++ (void)setMinimumDismissTimeInterval:(NSTimeInterval)interval {
+    [self sharedView].minimumDismissTimeInterval = interval;
+}
+
++ (void)setMaximumDismissTimeInterval:(NSTimeInterval)interval {
+    [self sharedView].maximumDismissTimeInterval = interval;
 }
 
 
@@ -265,6 +276,8 @@ static const CGFloat SVProgressHUDUndefinedProgress = -1;
         self.backgroundColor = [UIColor clearColor];
         self.alpha = 0.0f;
         self.activityCount = 0;
+        self.minimumDismissTimeInterval = 5.0;
+        self.maximumDismissTimeInterval = CGFLOAT_MAX;
         
         SVProgressHUDBackgroundColor = [UIColor whiteColor];
         SVProgressHUDForegroundColor = [UIColor blackColor];
@@ -1036,7 +1049,8 @@ static const CGFloat SVProgressHUDUndefinedProgress = -1;
 #pragma mark - Getters
 
 - (NSTimeInterval)displayDurationForString:(NSString*)string {
-    return MIN((float)string.length*0.06 + 0.5, 5.0);
+    CGFloat minimum = MAX((CGFloat)string.length * 0.06 + 0.5, self.minimumDismissTimeInterval);
+    return MIN(minimum, self.maximumDismissTimeInterval);
 }
 
 - (BOOL)isClear { // used for iOS 7 and above

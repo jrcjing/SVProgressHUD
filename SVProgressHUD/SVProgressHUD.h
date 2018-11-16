@@ -79,5 +79,8 @@ typedef NS_ENUM(NSUInteger, SVProgressHUDMaskType) {
 
 + (BOOL)isVisible;
 
++ (void)setMinimumDismissTimeInterval:(NSTimeInterval)interval;     // default is 5.0 seconds
++ (void)setMaximumDismissTimeInterval:(NSTimeInterval)interval;     // default is infinite
+
 @end
 
