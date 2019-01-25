@@ -76,11 +76,13 @@ typedef NS_ENUM(NSUInteger, SVProgressHUDMaskType) {
 
 + (void)popActivity; // decrease activity count, if activity count == 0 the HUD is dismissed
 + (void)dismiss;
++ (void)delayDismiss;
 
 + (BOOL)isVisible;
 
 + (void)setMinimumDismissTimeInterval:(NSTimeInterval)interval;     // default is 5.0 seconds
 + (void)setMaximumDismissTimeInterval:(NSTimeInterval)interval;     // default is infinite
 
++ (void)noTransform:(BOOL)noTrans;
 @end
 

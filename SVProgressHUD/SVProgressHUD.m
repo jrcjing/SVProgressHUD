@@ -40,7 +40,9 @@ static const CGFloat SVProgressHUDUndefinedProgress = -1;
 
 #define isIPhoneX   ([UIScreen mainScreen].bounds.size.height == 812 || [UIScreen mainScreen].bounds.size.height == 896)
 
-#define SVProgressHUDEnableNavBarFrame  isIPhoneX ? CGRectMake(0.0f, 88.0f, [UIScreen mainScreen].bounds.size.width, [UIScreen mainScreen].bounds.size.height - 88.0f) : CGRectMake(0.0f, 64.0f, [UIScreen mainScreen].bounds.size.width, [UIScreen mainScreen].bounds.size.height - 44.0f)
+#define topOffset isIPhoneX ? 88.0f : 64.0f
+
+#define SVProgressHUDEnableNavBarFrame CGRectMake(0.0f, topOffset, [UIScreen mainScreen].bounds.size.width, [UIScreen mainScreen].bounds.size.height - topOffset)
 
 #define SVProgressHUDNonEnableNavBarFrame  CGRectMake(0.0f, 0.0f, [UIScreen mainScreen].bounds.size.width, [UIScreen mainScreen].bounds.size.height)
 
@@ -64,6 +66,7 @@ static const CGFloat SVProgressHUDUndefinedProgress = -1;
 
 @property (nonatomic, readonly) CGFloat visibleKeyboardHeight;
 @property (nonatomic, assign) UIOffset offsetFromCenter;
+@property (nonatomic, assign) BOOL noTransform;
 
 @property (assign, nonatomic) NSTimeInterval minimumDismissTimeInterval;
 @property (assign, nonatomic) NSTimeInterval maximumDismissTimeInterval;
@@ -95,6 +98,10 @@ static const CGFloat SVProgressHUDUndefinedProgress = -1;
 
 
 #pragma mark - Setters
+
++ (void)noTransform:(BOOL)noTrans {
+    [[self sharedView] setNoTransform:noTrans];
+}
 
 + (void)setStatus:(NSString *)string {
     [[self sharedView] setStatus:string];
@@ -253,6 +260,12 @@ static const CGFloat SVProgressHUDUndefinedProgress = -1;
 + (void)dismiss {
     if ([self isVisible]) {
         [[self sharedView] dismiss];
+    }
+}
+
++ (void)delayDismiss {
+    if ([self isVisible]) {
+        [[self sharedView] delayDismiss];
     }
 }
 
@@ -420,7 +433,7 @@ static const CGFloat SVProgressHUDUndefinedProgress = -1;
     if(string)
         self.imageView.center = CGPointMake(CGRectGetWidth(self.hudView.bounds)/2, 36.0f);
     else
-       	self.imageView.center = CGPointMake(CGRectGetWidth(self.hudView.bounds)/2, CGRectGetHeight(self.hudView.bounds)/2);
+        self.imageView.center = CGPointMake(CGRectGetWidth(self.hudView.bounds)/2, CGRectGetHeight(self.hudView.bounds)/2);
     
     self.stringLabel.hidden = NO;
     self.stringLabel.frame = labelRect;
@@ -565,7 +578,7 @@ static const CGFloat SVProgressHUDUndefinedProgress = -1;
     
     if (ignoreOrientation) {
         rotateAngle = 0.0;
-        newCenter = CGPointMake(posX, posY);
+        newCenter = CGPointMake(posX, posY + ((self.maskType == SVProgressHUDMaskTypeActiveNavBar) ? 0 : topOffset));
     } else {
         switch (orientation) {
             case UIInterfaceOrientationPortraitUpsideDown:
@@ -702,7 +715,9 @@ static const CGFloat SVProgressHUDUndefinedProgress = -1;
                                                           userInfo:userInfo];
         
         [self registerNotifications];
-        self.hudView.transform = CGAffineTransformScale(self.hudView.transform, 1.3, 1.3);
+        if (!self.noTransform) {
+            self.hudView.transform = CGAffineTransformScale(self.hudView.transform, 1.3, 1.3);
+        }
         
         if(self.isClear) {
             self.alpha = 1;
@@ -713,7 +728,9 @@ static const CGFloat SVProgressHUDUndefinedProgress = -1;
                               delay:0
                             options:UIViewAnimationOptionAllowUserInteraction | UIViewAnimationCurveEaseOut | UIViewAnimationOptionBeginFromCurrentState
                          animations:^{
-                             self.hudView.transform = CGAffineTransformScale(self.hudView.transform, 1/1.3, 1/1.3);
+                             if (!self.noTransform) {
+                                 self.hudView.transform = CGAffineTransformScale(self.hudView.transform, 1/1.3, 1/1.3);
+                             }
                              
                              if(self.isClear) // handle iOS 7 and 8 UIToolbar which not answers well to hierarchy opacity change
                                  self.hudView.alpha = 1;
@@ -834,7 +851,9 @@ static const CGFloat SVProgressHUDUndefinedProgress = -1;
                                                           userInfo:userInfo];
         
         [self registerNotifications];
-        self.hudView.transform = CGAffineTransformScale(self.hudView.transform, 1.3, 1.3);
+        if (!self.noTransform) {
+            self.hudView.transform = CGAffineTransformScale(self.hudView.transform, 1.3, 1.3);
+        }
         
         if(self.isClear) {
             self.alpha = 1;
@@ -846,7 +865,9 @@ static const CGFloat SVProgressHUDUndefinedProgress = -1;
                               delay:0
                             options:UIViewAnimationOptionAllowUserInteraction | UIViewAnimationCurveEaseOut | UIViewAnimationOptionBeginFromCurrentState
                          animations:^{
-                             self.hudView.transform = CGAffineTransformScale(self.hudView.transform, 1/1.3, 1/1.3);
+                             if (!self.noTransform) {
+                                 self.hudView.transform = CGAffineTransformScale(self.hudView.transform, 1/1.3, 1/1.3);
+                             }
                              
                              if(self.isClear) // handle iOS 7 and 8 UIToolbar which not answers well to hierarchy opacity change
                                  self.hudView.alpha = 1;
@@ -911,18 +932,18 @@ static const CGFloat SVProgressHUDUndefinedProgress = -1;
     [[NSRunLoop mainRunLoop] addTimer:self.fadeOutTimer forMode:NSRunLoopCommonModes];
 }
 
-- (void)dismiss {
+- (void)realDismiss {
     NSDictionary *userInfo = [self notificationUserInfo];
-    [[NSNotificationCenter defaultCenter] postNotificationName:SVProgressHUDWillDisappearNotification
-                                                        object:nil
-                                                      userInfo:userInfo];
-    
-    self.activityCount = 0;
+    if (self.activityCount) {
+        return;
+    }
     [UIView animateWithDuration:0.15
                           delay:0
                         options:UIViewAnimationCurveEaseIn | UIViewAnimationOptionAllowUserInteraction
                      animations:^{
-                         self.hudView.transform = CGAffineTransformScale(self.hudView.transform, 0.8f, 0.8f);
+                         if (!self.noTransform) {
+                             self.hudView.transform = CGAffineTransformScale(self.hudView.transform, 0.8f, 0.8f);
+                         }
                          if(self.isClear) // handle iOS 7 UIToolbar not answer well to hierarchy opacity change
                              self.hudView.alpha = 0.0f;
                          else
@@ -962,6 +983,26 @@ static const CGFloat SVProgressHUDUndefinedProgress = -1;
                              //NSLog(@"keyWindow = %@", [UIApplication sharedApplication].keyWindow);
                          }
                      }];
+}
+
+- (void)dismiss {
+    NSDictionary *userInfo = [self notificationUserInfo];
+    [[NSNotificationCenter defaultCenter] postNotificationName:SVProgressHUDWillDisappearNotification
+                                                        object:nil
+                                                      userInfo:userInfo];
+    self.activityCount = 0;
+    [self realDismiss];
+}
+
+- (void)delayDismiss {
+    NSDictionary *userInfo = [self notificationUserInfo];
+    [[NSNotificationCenter defaultCenter] postNotificationName:SVProgressHUDWillDisappearNotification
+                                                        object:nil
+                                                      userInfo:userInfo];
+    self.activityCount = 0;
+    
+    [self performSelector:@selector(realDismiss) withObject:nil afterDelay:0.2];
+    
 }
 
 
@@ -1140,13 +1181,21 @@ static const CGFloat SVProgressHUDUndefinedProgress = -1;
         }
     }
     
-    for (__strong UIView *possibleKeyboard in [keyboardWindow subviews]) {
-        if ([possibleKeyboard isKindOfClass:NSClassFromString(@"UIPeripheralHostView")] || [possibleKeyboard isKindOfClass:NSClassFromString(@"UIKeyboard")]) {
-            return CGRectGetHeight(possibleKeyboard.bounds);
-        } else if ([possibleKeyboard isKindOfClass:NSClassFromString(@"UIInputSetContainerView")]) {
-            for (__strong UIView *possibleKeyboardSubview in [possibleKeyboard subviews]) {
-                if ([possibleKeyboardSubview isKindOfClass:NSClassFromString(@"UIInputSetHostView")]) {
-                    return CGRectGetHeight(possibleKeyboardSubview.bounds);
+    for (__strong UIView *possibleKeyboard in keyboardWindow.subviews) {
+        NSString *viewName = NSStringFromClass(possibleKeyboard.class);
+        if([viewName hasPrefix:@"UI"]){
+            if([viewName hasSuffix:@"PeripheralHostView"] || [viewName hasSuffix:@"Keyboard"]){
+                return CGRectGetHeight(possibleKeyboard.bounds);
+            } else if ([viewName hasSuffix:@"InputSetContainerView"]){
+                for (__strong UIView *possibleKeyboardSubview in possibleKeyboard.subviews) {
+                    viewName = NSStringFromClass(possibleKeyboardSubview.class);
+                    if([viewName hasPrefix:@"UI"] && [viewName hasSuffix:@"InputSetHostView"]) {
+                        CGRect convertedRect = [possibleKeyboard convertRect:possibleKeyboardSubview.frame toView:self];
+                        CGRect intersectedRect = CGRectIntersection(convertedRect, self.bounds);
+                        if (!CGRectIsNull(intersectedRect)) {
+                            return CGRectGetHeight(intersectedRect);
+                        }
+                    }
                 }
             }
         }
