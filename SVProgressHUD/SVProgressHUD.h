@@ -84,5 +84,7 @@ typedef NS_ENUM(NSUInteger, SVProgressHUDMaskType) {
 + (void)setMaximumDismissTimeInterval:(NSTimeInterval)interval;     // default is infinite
 
 + (void)noTransform:(BOOL)noTrans;
++ (void)setMinimumSize:(CGSize)minimumSize;
+
 @end
 

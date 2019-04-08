@@ -37,12 +37,15 @@ static const CGFloat SVProgressHUDRingRadius = 18;
 static const CGFloat SVProgressHUDRingNoTextRadius = 24;
 static const CGFloat SVProgressHUDParallaxDepthPoints = 10;
 static const CGFloat SVProgressHUDUndefinedProgress = -1;
+static const CGFloat SVProgressHUDVerticalSpacing = 12.0f;
+static const CGFloat SVProgressHUDHorizontalSpacing = 12.0f;
+static const CGFloat SVProgressHUDLabelSpacing = 8.0f;
 
 #define isIPhoneX   ([UIScreen mainScreen].bounds.size.height == 812 || [UIScreen mainScreen].bounds.size.height == 896)
 
 #define topOffset isIPhoneX ? 88.0f : 64.0f
 
-#define SVProgressHUDEnableNavBarFrame CGRectMake(0.0f, topOffset, [UIScreen mainScreen].bounds.size.width, [UIScreen mainScreen].bounds.size.height - topOffset)
+#define SVProgressHUDEnableNavBarFrame CGRectMake(0.0f, topOffset, [UIScreen mainScreen].bounds.size.width, [UIScreen mainScreen].bounds.size.height - (topOffset))
 
 #define SVProgressHUDNonEnableNavBarFrame  CGRectMake(0.0f, 0.0f, [UIScreen mainScreen].bounds.size.width, [UIScreen mainScreen].bounds.size.height)
 
@@ -71,6 +74,7 @@ static const CGFloat SVProgressHUDUndefinedProgress = -1;
 @property (assign, nonatomic) NSTimeInterval minimumDismissTimeInterval;
 @property (assign, nonatomic) NSTimeInterval maximumDismissTimeInterval;
 
+@property (assign, nonatomic) CGSize minimumSize UI_APPEARANCE_SELECTOR;
 
 - (void)showProgress:(float)progress status:(NSString*)string maskType:(SVProgressHUDMaskType)hudMaskType;
 - (void)showImage:(UIImage*)image status:(NSString*)status duration:(NSTimeInterval)duration maskType:(SVProgressHUDMaskType)hudMaskType;
@@ -197,6 +201,10 @@ static const CGFloat SVProgressHUDUndefinedProgress = -1;
     [[self sharedView] showProgress:progress status:status maskType:maskType];
 }
 
++ (void)setMinimumSize:(CGSize)minimumSize {
+    [self sharedView].minimumSize = minimumSize;
+}
+
 #pragma mark - Show then dismiss methods
 
 + (void)showInfoWithStatus:(NSString *)string {
@@ -291,6 +299,7 @@ static const CGFloat SVProgressHUDUndefinedProgress = -1;
         self.activityCount = 0;
         self.minimumDismissTimeInterval = 5.0;
         self.maximumDismissTimeInterval = CGFLOAT_MAX;
+        self.minimumSize = CGSizeZero;
         
         SVProgressHUDBackgroundColor = [UIColor whiteColor];
         SVProgressHUDForegroundColor = [UIColor blackColor];
@@ -370,96 +379,83 @@ static const CGFloat SVProgressHUDUndefinedProgress = -1;
 
 - (void)updatePosition {
     
-    CGFloat hudWidth = 100.0f;
-    CGFloat hudHeight = 100.0f;
-    CGFloat stringHeightBuffer = 20.0f;
-    CGFloat stringAndContentHeightBuffer = 80.0f;
+    BOOL imageUsed = (self.imageView.image) && !(self.imageView.hidden);
+    BOOL progressUsed = self.imageView.hidden;
     
-    CGFloat stringWidth = 0.0f;
-    CGFloat stringHeight = 0.0f;
+    // Calculate size of string
     CGRect labelRect = CGRectZero;
+    CGFloat labelHeight = 0.0f;
+    CGFloat labelWidth = 0.0f;
     
-    NSString *string = self.stringLabel.text;
-    
-    // Check if an image or progress ring is displayed
-    BOOL imageUsed = (self.imageView.image) || (self.imageView.hidden);
-    BOOL progressUsed = (self.progress != SVProgressHUDUndefinedProgress) && (self.progress >= 0.0f);
-    
-    if(string) {
+    if(self.stringLabel.text) {
         CGSize constraintSize = CGSizeMake(200.0f, 300.0f);
-        CGRect stringRect;
-        if ([string respondsToSelector:@selector(boundingRectWithSize:options:attributes:context:)]) {
-            stringRect = [string boundingRectWithSize:constraintSize
-                                              options:(NSStringDrawingUsesFontLeading|NSStringDrawingTruncatesLastVisibleLine|NSStringDrawingUsesLineFragmentOrigin)
-                                           attributes:@{NSFontAttributeName: self.stringLabel.font}
-                                              context:NULL];
-        } else {
-            CGSize stringSize;
-            
-            if ([string respondsToSelector:@selector(sizeWithAttributes:)])
-                stringSize = [string sizeWithAttributes:@{NSFontAttributeName:[UIFont fontWithName:self.stringLabel.font.fontName size:self.stringLabel.font.pointSize]}];
-            else
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated"
-                stringSize = [string sizeWithFont:self.stringLabel.font constrainedToSize:CGSizeMake(200.0f, 300.0f)];
-#pragma clang diagnostic pop
-            
-            stringRect = CGRectMake(0.0f, 0.0f, stringSize.width, stringSize.height);
-        }
-        stringWidth = stringRect.size.width;
-        stringHeight = ceil(CGRectGetHeight(stringRect));
-        
-        if (imageUsed || progressUsed)
-            hudHeight = stringAndContentHeightBuffer + stringHeight;
-        else
-            hudHeight = stringHeightBuffer + stringHeight;
-        
-        if(stringWidth > hudWidth)
-            hudWidth = ceil(stringWidth/2)*2;
-        
-        CGFloat labelRectY = (imageUsed || progressUsed) ? 68.0f : 9.0f;
-        
-        if(hudHeight > 100.0f) {
-            labelRect = CGRectMake(12.0f, labelRectY, hudWidth, stringHeight);
-            hudWidth += 24.0f;
-        } else {
-            hudWidth += 24.0f;
-            labelRect = CGRectMake(0.0f, labelRectY, hudWidth, stringHeight);
-        }
+        labelRect = [self.stringLabel.text boundingRectWithSize:constraintSize
+                                                        options:(NSStringDrawingOptions)(NSStringDrawingUsesFontLeading | NSStringDrawingTruncatesLastVisibleLine | NSStringDrawingUsesLineFragmentOrigin)
+                                                     attributes:@{NSFontAttributeName: self.stringLabel.font}
+                                                        context:NULL];
+        labelHeight = ceilf(CGRectGetHeight(labelRect));
+        labelWidth = ceilf(CGRectGetWidth(labelRect));
     }
     
-    self.hudView.bounds = CGRectMake(0.0f, 0.0f, hudWidth, hudHeight);
+    // Calculate hud size based on content
+    // For the beginning use default values, these
+    // might get update if string is too large etc.
+    CGFloat hudWidth;
+    CGFloat hudHeight;
     
-    if(string)
-        self.imageView.center = CGPointMake(CGRectGetWidth(self.hudView.bounds)/2, 36.0f);
-    else
-        self.imageView.center = CGPointMake(CGRectGetWidth(self.hudView.bounds)/2, CGRectGetHeight(self.hudView.bounds)/2);
+    CGFloat contentWidth = 0.0f;
+    CGFloat contentHeight = 0.0f;
     
-    self.stringLabel.hidden = NO;
-    self.stringLabel.frame = labelRect;
+    if(imageUsed || progressUsed) {
+        contentWidth = CGRectGetWidth(imageUsed ? self.imageView.frame : self.indefiniteAnimatedView.frame);
+        contentHeight = CGRectGetHeight(imageUsed ? self.imageView.frame : self.indefiniteAnimatedView.frame);
+    }
     
+    // |-spacing-content-spacing-|
+    hudWidth = SVProgressHUDHorizontalSpacing + MAX(labelWidth, contentWidth) + SVProgressHUDHorizontalSpacing;
+    
+    // |-spacing-content-(labelSpacing-label-)spacing-|
+    hudHeight = SVProgressHUDVerticalSpacing + labelHeight + contentHeight + SVProgressHUDVerticalSpacing;
+    if(self.stringLabel.text && (imageUsed || progressUsed)){
+        // Add spacing if both content and label are used
+        hudHeight += SVProgressHUDLabelSpacing;
+    }
+    
+    // Update values on subviews
+    self.hudView.bounds = CGRectMake(0.0f, 0.0f, MAX(self.minimumSize.width, hudWidth), MAX(self.minimumSize.height, hudHeight));
+    
+    // Animate value update
     [CATransaction begin];
-    [CATransaction setValue:(id)kCFBooleanTrue forKey:kCATransactionDisableActions];
+    [CATransaction setDisableActions:YES];
     
-    if(string) {
-        self.indefiniteAnimatedView.radius = SVProgressHUDRingRadius;
-        [self.indefiniteAnimatedView sizeToFit];
-        
-        CGPoint center = CGPointMake((CGRectGetWidth(self.hudView.bounds)/2), 36.0f);
-        self.indefiniteAnimatedView.center = center;
-        
-        if(self.progress != SVProgressHUDUndefinedProgress)
-            self.backgroundRingLayer.position = self.ringLayer.position = CGPointMake((CGRectGetWidth(self.hudView.bounds)/2), 36.0f);
+    // Spinner and image view
+    CGFloat centerY;
+    if(self.stringLabel.text) {
+        CGFloat yOffset = MAX(SVProgressHUDVerticalSpacing, (self.minimumSize.height - contentHeight - SVProgressHUDLabelSpacing - labelHeight) / 2.0f);
+        centerY = yOffset + contentHeight / 2.0f;
     } else {
-        self.indefiniteAnimatedView.radius = SVProgressHUDRingNoTextRadius;
-        [self.indefiniteAnimatedView sizeToFit];
-        
-        CGPoint center = CGPointMake((CGRectGetWidth(self.hudView.bounds)/2), CGRectGetHeight(self.hudView.bounds)/2);
-        self.indefiniteAnimatedView.center = center;
-        
-        if(self.progress != SVProgressHUDUndefinedProgress)
-            self.backgroundRingLayer.position = self.ringLayer.position = CGPointMake((CGRectGetWidth(self.hudView.bounds)/2), CGRectGetHeight(self.hudView.bounds)/2);
+        centerY = CGRectGetMidY(self.hudView.bounds);
     }
+    self.indefiniteAnimatedView.center = CGPointMake(CGRectGetMidX(self.hudView.bounds), centerY);
+    if(self.progress != SVProgressHUDUndefinedProgress) {
+        CGRect backgroundRingLayerFrame = _backgroundRingLayer.frame;
+        backgroundRingLayerFrame.origin.y = centerY - SVProgressHUDRingRadius;
+        _backgroundRingLayer.frame = backgroundRingLayerFrame;
+        
+        CGRect ringLayerFrame = _ringLayer.frame;
+        ringLayerFrame.origin.y = centerY - SVProgressHUDRingRadius;
+        _ringLayer.frame = ringLayerFrame;
+    }
+    self.imageView.center = CGPointMake(CGRectGetMidX(self.hudView.bounds), centerY);
+    
+    // Label
+    if(imageUsed || progressUsed) {
+        centerY = CGRectGetMaxY(imageUsed ? self.imageView.frame : self.indefiniteAnimatedView.frame) + SVProgressHUDLabelSpacing + labelHeight / 2.0f;
+    } else {
+        centerY = CGRectGetMidY(self.hudView.bounds);
+    }
+    self.stringLabel.frame = labelRect;
+    self.stringLabel.center = CGPointMake(CGRectGetMidX(self.hudView.bounds), centerY);
     
     [CATransaction commit];
 }
