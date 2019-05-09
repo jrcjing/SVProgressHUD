@@ -439,10 +439,12 @@ static const CGFloat SVProgressHUDLabelSpacing = 8.0f;
     self.indefiniteAnimatedView.center = CGPointMake(CGRectGetMidX(self.hudView.bounds), centerY);
     if(self.progress != SVProgressHUDUndefinedProgress) {
         CGRect backgroundRingLayerFrame = _backgroundRingLayer.frame;
+        backgroundRingLayerFrame.origin.x = CGRectGetMidX(self.hudView.bounds) - SVProgressHUDRingRadius;
         backgroundRingLayerFrame.origin.y = centerY - SVProgressHUDRingRadius;
         _backgroundRingLayer.frame = backgroundRingLayerFrame;
         
         CGRect ringLayerFrame = _ringLayer.frame;
+        ringLayerFrame.origin.x = CGRectGetMidX(self.hudView.bounds) - SVProgressHUDRingRadius;
         ringLayerFrame.origin.y = centerY - SVProgressHUDRingRadius;
         _ringLayer.frame = ringLayerFrame;
     }
