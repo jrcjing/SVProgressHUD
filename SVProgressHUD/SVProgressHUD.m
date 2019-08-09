@@ -56,10 +56,8 @@ static const CGFloat SVProgressHUDLabelSpacing = 8.0f;
 @property (nonatomic, strong, readonly) NSTimer *fadeOutTimer;
 @property (nonatomic, readonly, getter = isClear) BOOL clear;
 
-@property (nonatomic, strong) UIControl *overlayView;
 @property (nonatomic, strong) UIView *hudView;
 @property (nonatomic, strong) UILabel *stringLabel;
-@property (nonatomic, strong) UIImageView *imageView;
 @property (nonatomic, strong) SVIndefiniteAnimatedView *indefiniteAnimatedView;
 
 @property (nonatomic, readwrite) CGFloat progress;
@@ -954,12 +952,21 @@ static const CGFloat SVProgressHUDLabelSpacing = 8.0f;
                              
                              [[NSNotificationCenter defaultCenter] removeObserver:self];
                              [self cancelRingLayerAnimation];
+                             [_hudView.subviews enumerateObjectsUsingBlock:^(__kindof UIView * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+                                 [obj removeFromSuperview];
+                             }];
                              [_hudView removeFromSuperview];
                              _hudView = nil;
                              
+                             [_overlayView.subviews enumerateObjectsUsingBlock:^(__kindof UIView * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+                                 [obj removeFromSuperview];
+                             }];
                              [_overlayView removeFromSuperview];
                              _overlayView = nil;
                              
+                             [_indefiniteAnimatedView.subviews enumerateObjectsUsingBlock:^(__kindof UIView * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+                                 [obj removeFromSuperview];
+                             }];
                              [_indefiniteAnimatedView removeFromSuperview];
                              _indefiniteAnimatedView = nil;
                              

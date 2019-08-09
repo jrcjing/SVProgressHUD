@@ -28,6 +28,9 @@ typedef NS_ENUM(NSUInteger, SVProgressHUDMaskType) {
 
 @interface SVProgressHUD : UIView
 
+@property (nonatomic, strong) UIImageView *imageView;
+@property (nonatomic, strong) UIControl *overlayView;
+
 #pragma mark - Customization
 
 + (void)setBackgroundColor:(UIColor*)color;                 // default is [UIColor whiteColor]
